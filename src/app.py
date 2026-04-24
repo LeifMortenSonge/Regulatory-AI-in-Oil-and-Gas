@@ -1022,9 +1022,12 @@ elif step == STEPS[6]:
         """
     )
 
-    # Compute baseline SHAP values (first 500 samples)
-    baseline_data = data[FEATURE_NAMES].iloc[:500]
-    baseline_shap = explainer(baseline_data).values
+    # Compute baseline SHAP values (cached in session state)
+    if "drift_baseline_shap" not in st.session_state:
+        with st.spinner("Computing baseline SHAP values (500 samples)..."):
+            baseline_data = data[FEATURE_NAMES].iloc[:500]
+            st.session_state["drift_baseline_shap"] = explainer(baseline_data).values
+    baseline_shap = st.session_state["drift_baseline_shap"]
 
     # Let user choose scenario
     scenario = st.radio(
@@ -1033,21 +1036,30 @@ elif step == STEPS[6]:
             "🟢 Normal operation — no drift",
             "🔴 Drifted operation — simulated sensor degradation",
         ],
+        key="drift_scenario",
     )
 
-    if "Normal" in scenario:
-        # Same distribution, different sample
-        recent_data = data[FEATURE_NAMES].iloc[500:800]
-        recent_shap = explainer(recent_data).values
+    is_normal = "Normal" in scenario
+    cache_key = "drift_recent_shap_normal" if is_normal else "drift_recent_shap_drifted"
+
+    if cache_key not in st.session_state:
+        with st.spinner("Computing SHAP values for selected scenario..."):
+            if is_normal:
+                recent_data = data[FEATURE_NAMES].iloc[500:800]
+                st.session_state[cache_key] = explainer(recent_data).values
+            else:
+                drifted_data = data[FEATURE_NAMES].iloc[500:800].copy()
+                rng = np.random.RandomState(99)
+                drifted_data["annulus_pressure_psi"] = drifted_data["annulus_pressure_psi"] + rng.normal(50, 20, len(drifted_data))
+                drifted_data["casing_integrity_score"] = drifted_data["casing_integrity_score"] * 0.7
+                drifted_data["vibration_rms"] = drifted_data["vibration_rms"] * 2.5
+                st.session_state[cache_key] = explainer(drifted_data).values
+
+    recent_shap = st.session_state[cache_key]
+
+    if is_normal:
         st.info("**Scenario:** Using data from the same operational period. SHAP distributions should be stable.")
     else:
-        # Inject drift: alter annulus pressure and reduce casing integrity importance
-        drifted_data = data[FEATURE_NAMES].iloc[500:800].copy()
-        rng = np.random.RandomState(99)
-        drifted_data["annulus_pressure_psi"] = drifted_data["annulus_pressure_psi"] + rng.normal(50, 20, len(drifted_data))
-        drifted_data["casing_integrity_score"] = drifted_data["casing_integrity_score"] * 0.7
-        drifted_data["vibration_rms"] = drifted_data["vibration_rms"] * 2.5
-        recent_shap = explainer(drifted_data).values
         st.warning(
             "**Scenario:** Simulated sensor degradation — annulus pressure offset, "
             "casing integrity reduced, vibration increased. Watch how SHAP detects this."

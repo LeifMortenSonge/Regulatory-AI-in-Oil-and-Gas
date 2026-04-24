@@ -127,7 +127,7 @@ def generate_well_data(n_samples: int = 1000, seed: int = 42) -> pd.DataFrame:
         + 0.05 * (data["vibration_rms"] > 2).astype(float)
         + rng.normal(0, 0.05, n_samples)
     )
-    data["barrier_failure_risk"] = (risk_score > 0.35).astype(int)
+    data["barrier_failure_risk"] = (risk_score > 0.10).astype(int)
 
     return data
 
@@ -173,9 +173,7 @@ def create_explainer():
     This is the mathematical foundation of the defensible position.
     """
     model = train_model()
-    data = generate_well_data()
-    background = shap.utils.sample(data[FEATURE_NAMES], nsamples=100)
-    explainer = shap.TreeExplainer(model, data=background)
+    explainer = shap.TreeExplainer(model)
     return explainer
 
 

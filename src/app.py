@@ -573,7 +573,9 @@ elif step == STEPS[2]:
     )
 
     st.markdown("### Select a well to assess")
-    well_idx = st.slider("Well sample index", 0, len(data) - 1, 42)
+    if "well_idx" not in st.session_state:
+        st.session_state["well_idx"] = 42
+    well_idx = st.slider("Well sample index", 0, len(data) - 1, key="well_idx")
     sample = data.iloc[well_idx]
     features = sample[FEATURE_NAMES].values.reshape(1, -1)
 
@@ -602,7 +604,6 @@ elif step == STEPS[2]:
     c3.metric("Confidence", f"{max(prob):.1%}")
 
     # Store in session for later steps
-    st.session_state["well_idx"] = well_idx
     st.session_state["features"] = features
     st.session_state["prediction"] = int(prediction)
     st.session_state["probability"] = float(prob[1])

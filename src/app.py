@@ -672,19 +672,37 @@ elif step == STEPS[3]:
     st.session_state["shap_base_value"] = base_value
     st.session_state["shap_ranked"] = ranked
 
-    # ── Waterfall chart ──
+    # ── Waterfall chart (Plotly) ──
     st.markdown("### SHAP Waterfall — Decision Decomposition")
     st.caption(
         "Each bar shows one feature's contribution. "
         "Red bars push toward HIGH RISK, blue bars push toward NORMAL."
     )
 
-    shap.plots.waterfall(shap_values[0], max_display=10, show=False)
-    fig_waterfall = plt.gcf()
-    fig_waterfall.set_size_inches(10, 6)
-    fig_waterfall.tight_layout()
-    st.pyplot(fig_waterfall, use_container_width=True)
-    plt.close("all")
+    # Build waterfall using Plotly instead of shap.plots.waterfall to avoid
+    # matplotlib oversized-figure issues in containerised Streamlit.
+    wf_names = [name for name, _ in ranked[:10]]
+    wf_values = [val for _, val in ranked[:10]]
+    wf_colors = ["#f87171" if v > 0 else "#4f8ff7" for v in wf_values]
+
+    fig_waterfall = go.Figure(go.Waterfall(
+        orientation="h",
+        y=wf_names,
+        x=wf_values,
+        connector={"line": {"color": "rgba(0,0,0,0)"}},
+        base=base_value,
+        textposition="outside",
+        text=[f"{v:+.4f}" for v in wf_values],
+        decreasing={"marker": {"color": "#4f8ff7"}},
+        increasing={"marker": {"color": "#f87171"}},
+    ))
+    fig_waterfall.update_layout(
+        title=f"Base value: {base_value:.4f} → Prediction: {prediction:.4f}",
+        yaxis=dict(autorange="reversed"),
+        height=450,
+        margin=dict(l=200),
+    )
+    st.plotly_chart(fig_waterfall, use_container_width=True)
 
     # ── Bar chart ──
     st.markdown("### Feature Importance — Absolute SHAP Values")

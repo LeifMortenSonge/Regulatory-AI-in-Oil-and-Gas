@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: shap-well-integrity-demo
+metadata:
+  template: shap-well-integrity-demo@0.0.1
+services:
+  web:
+    project: ./src
+    host: containerapp
+    language: py
+    docker:
+      path: ./Dockerfile
+      context: .
+      remoteBuild: true

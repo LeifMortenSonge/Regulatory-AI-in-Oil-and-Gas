@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHAP in Agentic AI — Technical Implementation for Oil &amp; Gas</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #232735;
+            --border: #2e3346;
+            --text: #e2e4ea;
+            --text-muted: #8b90a0;
+            --accent: #4f8ff7;
+            --accent-light: #6ba3ff;
+            --green: #34d399;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --purple: #a78bfa;
+            --teal: #2dd4bf;
+            --pink: #f472b6;
+            --orange: #fb923c;
+            --radius: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        a { color: var(--accent-light); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .25rem; color: #fff; }
+        .subtitle { color: var(--text-muted); font-size: .95rem; margin-bottom: .5rem; }
+        .back-link { font-size: .8rem; margin-bottom: 2rem; display: inline-block; }
+        header { margin-bottom: 2.5rem; }
+
+        /* ── SECTION ── */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: .5rem;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: .75rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .section-body { padding: 1rem 1.25rem; }
+        .section.collapsed .section-body { display: none; }
+        .collapse-icon { transition: transform .2s; }
+        .section.collapsed .collapse-icon { transform: rotate(-90deg); }
+
+        .badge {
+            font-size: .65rem;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .badge-blue   { background: rgba(79,143,247,.15); color: var(--accent-light); }
+        .badge-green  { background: rgba(52,211,153,.15); color: var(--green); }
+        .badge-amber  { background: rgba(251,191,36,.15); color: var(--amber); }
+        .badge-red    { background: rgba(248,113,113,.15); color: var(--red); }
+        .badge-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+        .badge-teal   { background: rgba(45,212,191,.15); color: var(--teal); }
+        .badge-pink   { background: rgba(244,114,182,.15); color: var(--pink); }
+        .badge-orange { background: rgba(251,146,60,.15); color: var(--orange); }
+
+        /* ── COMPONENT CARDS ── */
+        .component-row {
+            display: flex;
+            gap: .75rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .component {
+            flex: 1 1 260px;
+            max-width: 360px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .85rem 1rem;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .component:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        .component h3 {
+            font-size: .85rem;
+            font-weight: 600;
+            margin-bottom: .35rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .component p, .component ul {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: .5rem;
+        }
+        .component ul { padding-left: 1.1rem; }
+        .component li { margin-bottom: .2rem; }
+        .tag-row { display: flex; gap: .3rem; flex-wrap: wrap; }
+        .tag {
+            font-size: .6rem;
+            padding: .1rem .4rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,.06);
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        .tag-accent {
+            background: rgba(79,143,247,.12);
+            color: var(--accent-light);
+            border-color: rgba(79,143,247,.25);
+        }
+
+        /* ── FLOW ARROWS ── */
+        .flow-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: .5rem 0;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        /* ── CODE BLOCKS ── */
+        .code-block {
+            background: #161822;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: .75rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            margin: .75rem 0;
+            color: var(--text);
+        }
+        .code-block .comment { color: #6a737d; }
+        .code-block .keyword { color: var(--purple); }
+        .code-block .string { color: var(--green); }
+        .code-block .func { color: var(--accent-light); }
+        .code-block .type { color: var(--amber); }
+        .code-block .param { color: var(--orange); }
+
+        /* ── ARCHITECTURE DIAGRAM ── */
+        .arch-diagram {
+            background: #161822;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin: .75rem 0;
+            overflow-x: auto;
+        }
+        .arch-layer {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: .75rem;
+        }
+        .arch-layer:last-child { margin-bottom: 0; }
+        .arch-label {
+            min-width: 140px;
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            text-align: right;
+            padding-right: .75rem;
+            border-right: 2px solid var(--border);
+        }
+        .arch-boxes {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .arch-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .4rem .7rem;
+            font-size: .7rem;
+            white-space: nowrap;
+        }
+        .arch-box.highlight {
+            border-color: var(--accent);
+            background: rgba(79,143,247,.1);
+            color: var(--accent-light);
+        }
+        .arch-arrow {
+            display: flex;
+            justify-content: center;
+            padding: .25rem 0;
+            color: var(--text-muted);
+            font-size: .9rem;
+            margin-left: 155px;
+        }
+
+        /* ── TABLE ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .75rem;
+            margin-top: .75rem;
+        }
+        .data-table th, .data-table td {
+            padding: .5rem .7rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .data-table td { color: var(--text); }
+
+        /* ── PIPELINE VISUAL ── */
+        .pipeline {
+            display: flex;
+            gap: 0;
+            align-items: stretch;
+            margin: .75rem 0;
+            overflow-x: auto;
+        }
+        .pipeline-stage {
+            flex: 1;
+            min-width: 140px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: .7rem .8rem;
+            position: relative;
+            text-align: center;
+        }
+        .pipeline-stage:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+        .pipeline-stage:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+        .pipeline-stage h4 {
+            font-size: .72rem;
+            font-weight: 600;
+            margin-bottom: .25rem;
+        }
+        .pipeline-stage p {
+            font-size: .65rem;
+            color: var(--text-muted);
+        }
+        .pipeline-stage .stage-icon {
+            font-size: 1.2rem;
+            margin-bottom: .3rem;
+        }
+        .pipeline-arrow {
+            display: flex;
+            align-items: center;
+            color: var(--accent);
+            font-size: 1rem;
+            padding: 0 .1rem;
+        }
+
+        /* ── INFO NOTE ── */
+        .info-note {
+            background: rgba(79,143,247,.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: .75rem 1rem;
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin: .75rem 0;
+        }
+        .info-note strong { color: var(--text); }
+
+        /* ── TABS ── */
+        .tab-bar {
+            display: flex;
+            gap: .25rem;
+            margin-bottom: .75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: .78rem;
+            padding: .5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all .15s;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent-light); border-bottom-color: var(--accent); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── CONTROLS ── */
+        .controls {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: .45rem .9rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: .8rem;
+            transition: all .15s;
+        }
+        .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: .35rem;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .component { max-width: 100%; }
+            .arch-label { min-width: 100px; font-size: .6rem; }
+            .pipeline { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a class="back-link" href="index.html">← Back to Qualification Framework</a>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+        <div>
+            <h1>SHAP in Agentic AI — Technical Implementation</h1>
+            <p class="subtitle">SHapley Additive exPlanations for Defensible AI in Oil &amp; Gas (Norway)</p>
+        </div>
+        <div class="controls">
+            <button onclick="expandAll()">Expand All</button>
+            <button onclick="collapseAll()">Collapse All</button>
+        </div>
+    </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 1: WHAT IS SHAP & WHY IT MATTERS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="shap-overview">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            1 — What SHAP Provides &amp; Why It Matters Here
+            <span class="badge badge-blue">Foundation</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">SHAP decomposes any AI prediction into per-feature contribution values grounded in Shapley values from cooperative game theory. In a regulated Oil &amp; Gas context, this transforms opaque agent decisions into auditable, quantifiable evidence.</p>
+
+        <div class="component-row">
+            <div class="component">
+                <h3>🧮 Mathematical Foundation</h3>
+                <p>For each prediction, SHAP computes the marginal contribution of every feature, satisfying three axioms: <strong style="color:var(--text)">local accuracy</strong> (values sum to the prediction), <strong style="color:var(--text)">missingness</strong> (absent features get zero), and <strong style="color:var(--text)">consistency</strong> (monotone feature importance).</p>
+                <div class="tag-row">
+                    <span class="tag">Shapley Values</span>
+                    <span class="tag">Game Theory</span>
+                    <span class="tag">Additive</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>⚖️ Regulatory Defensibility</h3>
+                <p>Unlike attention weights or saliency maps, SHAP values have a proven theoretical basis — making them defensible under PSA inspection, EU AI Act conformity assessment (Art. 13-14), and DNV-RP-A203 qualification.</p>
+                <div class="tag-row">
+                    <span class="tag">EU AI Act Art. 13</span>
+                    <span class="tag">PSA §§ 4-5</span>
+                    <span class="tag">DNV-RP-A203</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>🔌 Model-Agnostic</h3>
+                <p>Works with any model: XGBoost, neural networks, LLM-based classifiers, ensemble agents. The same explanation framework applies whether your agent uses a gradient-boosted tree or a fine-tuned transformer.</p>
+                <div class="tag-row">
+                    <span class="tag">TreeSHAP</span>
+                    <span class="tag">KernelSHAP</span>
+                    <span class="tag">DeepSHAP</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-note">
+            <strong>Key principle:</strong> Every agent decision in a safety-critical Oil &amp; Gas process must answer <em>"why?"</em> with quantifiable evidence. SHAP provides that answer in a form that auditors, regulators, and courts can evaluate mathematically.
+        </div>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 2: TECHNICAL ARCHITECTURE
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="architecture">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            2 — Technical Architecture &amp; Component Stack
+            <span class="badge badge-purple">Architecture</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">The implementation stack integrates SHAP into the agentic AI pipeline at multiple layers. Each layer has specific technology components.</p>
+
+        <div class="arch-diagram">
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--pink)">Presentation</div>
+                <div class="arch-boxes">
+                    <div class="arch-box">SHAP Force Plots (D3.js)</div>
+                    <div class="arch-box">Explanation Dashboard (Streamlit / Dash)</div>
+                    <div class="arch-box">Audit Report PDF Generator</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕</div>
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--accent-light)">API Layer</div>
+                <div class="arch-boxes">
+                    <div class="arch-box highlight">SHAP Explanation Service (FastAPI)</div>
+                    <div class="arch-box">REST / gRPC Endpoints</div>
+                    <div class="arch-box">Async Queue (Redis / Celery)</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕</div>
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--green)">Compute</div>
+                <div class="arch-boxes">
+                    <div class="arch-box highlight">shap (Python library)</div>
+                    <div class="arch-box">TreeSHAP / KernelSHAP / DeepSHAP</div>
+                    <div class="arch-box">Background Dataset Manager</div>
+                    <div class="arch-box">Feature Engineering Pipeline</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕</div>
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--amber)">Agent Layer</div>
+                <div class="arch-boxes">
+                    <div class="arch-box">Agent Orchestrator</div>
+                    <div class="arch-box highlight">SHAP Middleware (intercept → explain)</div>
+                    <div class="arch-box">Decision Router</div>
+                    <div class="arch-box">Guardrail Engine</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕</div>
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--teal)">Storage</div>
+                <div class="arch-boxes">
+                    <div class="arch-box">SHAP Value Store (TimescaleDB / ClickHouse)</div>
+                    <div class="arch-box highlight">Immutable Audit Log (WORM)</div>
+                    <div class="arch-box">Feature Store (Feast / Tecton)</div>
+                    <div class="arch-box">Model Registry (MLflow)</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕</div>
+            <div class="arch-layer">
+                <div class="arch-label" style="color:var(--red)">Monitoring</div>
+                <div class="arch-boxes">
+                    <div class="arch-box highlight">SHAP Drift Detector</div>
+                    <div class="arch-box">Grafana / Prometheus Dashboards</div>
+                    <div class="arch-box">Alert Manager (PagerDuty / OpsGenie)</div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="font-size:.85rem;margin:1rem 0 .5rem;">Core Technology Components</h3>
+        <table class="data-table">
+            <thead>
+                <tr><th>Component</th><th>Technology</th><th>Purpose</th><th>PyPI / Install</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>SHAP Core</td><td><code>shap</code></td><td>Shapley value computation for any model</td><td><code>pip install shap</code></td></tr>
+                <tr><td>ML Framework</td><td><code>scikit-learn</code>, <code>xgboost</code>, <code>lightgbm</code></td><td>Tabular models for sensor/operational data</td><td><code>pip install scikit-learn xgboost</code></td></tr>
+                <tr><td>LLM Wrapper</td><td><code>langchain</code> + <code>shap.Explainer</code></td><td>Structured output from LLM agents → SHAP-compatible</td><td><code>pip install langchain</code></td></tr>
+                <tr><td>API Server</td><td><code>FastAPI</code> + <code>uvicorn</code></td><td>Explanation microservice</td><td><code>pip install fastapi uvicorn</code></td></tr>
+                <tr><td>Task Queue</td><td><code>celery</code> + <code>redis</code></td><td>Async SHAP computation for high-volume decisions</td><td><code>pip install celery redis</code></td></tr>
+                <tr><td>Feature Store</td><td><code>feast</code></td><td>Versioned feature management with lineage</td><td><code>pip install feast</code></td></tr>
+                <tr><td>Model Registry</td><td><code>mlflow</code></td><td>Model versioning, experiment tracking, deployment</td><td><code>pip install mlflow</code></td></tr>
+                <tr><td>Time-Series DB</td><td>TimescaleDB or ClickHouse</td><td>Store SHAP value time-series for drift analysis</td><td>Docker / managed service</td></tr>
+                <tr><td>Visualization</td><td><code>shap.plots</code> + <code>matplotlib</code></td><td>Force plots, beeswarm, waterfall, dependence</td><td>Included with <code>shap</code></td></tr>
+                <tr><td>Monitoring</td><td><code>evidently</code> or <code>whylogs</code></td><td>Data and prediction drift detection</td><td><code>pip install evidently</code></td></tr>
+                <tr><td>Audit Storage</td><td>Azure Blob (WORM) or AWS S3 Object Lock</td><td>Immutable, tamper-proof explanation records</td><td>Cloud-native</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 3: IMPLEMENTATION — STEP BY STEP
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="implementation">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            3 — Technical Implementation — Code Patterns
+            <span class="badge badge-green">Implementation</span>
+        </h2>
+    </div>
+    <div class="section-body">
+
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab(event, 'tab-core')">Core SHAP</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-agent')">Agent Middleware</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-guardrail')">Guardrail Engine</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-drift')">Drift Detection</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-audit')">Audit Record</button>
+        </div>
+
+        <!-- TAB: Core SHAP -->
+        <div class="tab-panel active" id="tab-core">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">Core pattern: wrap your agent's decision model with a SHAP explainer. Works for tabular models (sensor data, operational parameters) and structured LLM outputs.</p>
+
+            <div class="code-block"><span class="keyword">import</span> shap
+<span class="keyword">import</span> xgboost <span class="keyword">as</span> xgb
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timezone
+
+<span class="comment"># ── 1. Train or load the agent's decision model ──</span>
+<span class="comment"># Example: Well integrity risk prediction from sensor data</span>
+model = xgb.<span class="func">XGBClassifier</span>()
+model.<span class="func">load_model</span>(<span class="string">"models/well_integrity_v3.json"</span>)
+
+<span class="comment"># ── 2. Create SHAP explainer with background dataset ──</span>
+<span class="comment"># Background data = representative sample of normal operations</span>
+background = shap.utils.<span class="func">sample</span>(X_train, <span class="param">nsamples</span>=100)
+explainer = shap.<span class="func">TreeExplainer</span>(model, <span class="param">data</span>=background)
+
+<span class="comment"># ── 3. Explain a single agent decision ──</span>
+<span class="keyword">def</span> <span class="func">explain_decision</span>(features: np.ndarray, feature_names: list) -> dict:
+    <span class="string">"""Generate SHAP explanation for one agent decision."""</span>
+    shap_values = explainer.<span class="func">shap_values</span>(features)
+
+    <span class="comment"># Build per-feature attribution</span>
+    attributions = {
+        name: <span class="type">float</span>(val)
+        <span class="keyword">for</span> name, val <span class="keyword">in</span> <span class="func">zip</span>(feature_names, shap_values[0])
+    }
+
+    <span class="comment"># Sort by absolute impact</span>
+    ranked = <span class="func">sorted</span>(
+        attributions.items(),
+        <span class="param">key</span>=<span class="keyword">lambda</span> x: <span class="func">abs</span>(x[1]),
+        <span class="param">reverse</span>=<span class="type">True</span>
+    )
+
+    <span class="keyword">return</span> {
+        <span class="string">"base_value"</span>: <span class="type">float</span>(explainer.expected_value),
+        <span class="string">"prediction"</span>: <span class="type">float</span>(model.<span class="func">predict_proba</span>(features)[0, 1]),
+        <span class="string">"attributions"</span>: attributions,
+        <span class="string">"top_drivers"</span>: ranked[:5],
+        <span class="string">"timestamp"</span>: datetime.<span class="func">now</span>(timezone.utc).<span class="func">isoformat</span>(),
+    }</div>
+        </div>
+
+        <!-- TAB: Agent Middleware -->
+        <div class="tab-panel" id="tab-agent">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">SHAP middleware intercepts every agent decision, generates explanations, and attaches them to the decision record before it reaches the audit trail.</p>
+
+            <div class="code-block"><span class="keyword">from</span> functools <span class="keyword">import</span> wraps
+<span class="keyword">from</span> typing <span class="keyword">import</span> Callable, Any
+<span class="keyword">import</span> hashlib, json
+
+<span class="keyword">class</span> <span class="type">SHAPMiddleware</span>:
+    <span class="string">"""Intercept agent decisions, compute SHAP, attach to audit trail."""</span>
+
+    <span class="keyword">def</span> <span class="func">__init__</span>(self, explainer, feature_names, audit_store, guardrail_engine):
+        self.explainer = explainer
+        self.feature_names = feature_names
+        self.audit_store = audit_store
+        self.guardrails = guardrail_engine
+
+    <span class="keyword">def</span> <span class="func">wrap_agent_action</span>(self, agent_func: <span class="type">Callable</span>) -> <span class="type">Callable</span>:
+        <span class="string">"""Decorator: explain every agent decision automatically."""</span>
+
+        <span class="keyword">@wraps</span>(agent_func)
+        <span class="keyword">def</span> <span class="func">wrapper</span>(features, *args, **kwargs):
+            <span class="comment"># 1. Run the agent's decision</span>
+            decision = <span class="func">agent_func</span>(features, *args, **kwargs)
+
+            <span class="comment"># 2. Compute SHAP explanation</span>
+            explanation = <span class="func">explain_decision</span>(features, self.feature_names)
+
+            <span class="comment"># 3. Run guardrail checks against SHAP values</span>
+            guardrail_result = self.guardrails.<span class="func">check</span>(explanation)
+
+            <span class="comment"># 4. Build immutable audit record</span>
+            record = {
+                <span class="string">"decision"</span>: decision,
+                <span class="string">"explanation"</span>: explanation,
+                <span class="string">"guardrails"</span>: guardrail_result,
+                <span class="string">"features_hash"</span>: hashlib.<span class="func">sha256</span>(
+                    features.tobytes()
+                ).<span class="func">hexdigest</span>(),
+            }
+
+            <span class="comment"># 5. Store in immutable audit log</span>
+            self.audit_store.<span class="func">append</span>(record)
+
+            <span class="comment"># 6. If guardrails failed → escalate to human</span>
+            <span class="keyword">if not</span> guardrail_result[<span class="string">"passed"</span>]:
+                <span class="keyword">return</span> self.<span class="func">_escalate</span>(record)
+
+            <span class="keyword">return</span> decision
+
+        <span class="keyword">return</span> wrapper</div>
+        </div>
+
+        <!-- TAB: Guardrail Engine -->
+        <div class="tab-panel" id="tab-guardrail">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">SHAP-based guardrails enforce regulatory boundaries deterministically. If a safety-critical feature's SHAP value falls outside the validated envelope, the decision is blocked — not merely flagged.</p>
+
+            <div class="code-block"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass
+<span class="keyword">from</span> typing <span class="keyword">import</span> Dict, List, Optional
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> <span class="type">SHAPGuardrail</span>:
+    <span class="string">"""One guardrail rule tied to SHAP attribution boundaries."""</span>
+    feature: <span class="type">str</span>
+    min_shap: <span class="type">Optional</span>[<span class="type">float</span>] = <span class="type">None</span>       <span class="comment"># min expected SHAP contribution</span>
+    max_shap: <span class="type">Optional</span>[<span class="type">float</span>] = <span class="type">None</span>       <span class="comment"># max expected SHAP contribution</span>
+    must_be_top_n: <span class="type">Optional</span>[<span class="type">int</span>] = <span class="type">None</span>   <span class="comment"># must rank in top N drivers</span>
+    regulation: <span class="type">str</span> = <span class="string">""</span>              <span class="comment"># regulatory reference</span>
+    action: <span class="type">str</span> = <span class="string">"block"</span>              <span class="comment"># block | escalate | warn</span>
+
+<span class="keyword">class</span> <span class="type">SHAPGuardrailEngine</span>:
+    <span class="string">"""Deterministic guardrails based on SHAP attribution envelopes."""</span>
+
+    <span class="keyword">def</span> <span class="func">__init__</span>(self, rules: <span class="type">List</span>[<span class="type">SHAPGuardrail</span>]):
+        self.rules = rules
+
+    <span class="keyword">def</span> <span class="func">check</span>(self, explanation: dict) -> dict:
+        violations = []
+
+        <span class="keyword">for</span> rule <span class="keyword">in</span> self.rules:
+            val = explanation[<span class="string">"attributions"</span>].get(rule.feature, 0.0)
+            rank = self.<span class="func">_get_rank</span>(rule.feature, explanation)
+
+            <span class="keyword">if</span> rule.min_shap <span class="keyword">is not None and</span> val < rule.min_shap:
+                violations.<span class="func">append</span>({
+                    <span class="string">"rule"</span>: f<span class="string">"{rule.feature} SHAP below minimum"</span>,
+                    <span class="string">"expected"</span>: f<span class="string">"≥ {rule.min_shap}"</span>,
+                    <span class="string">"actual"</span>: val,
+                    <span class="string">"regulation"</span>: rule.regulation,
+                    <span class="string">"action"</span>: rule.action,
+                })
+
+            <span class="keyword">if</span> rule.must_be_top_n <span class="keyword">and</span> rank > rule.must_be_top_n:
+                violations.<span class="func">append</span>({
+                    <span class="string">"rule"</span>: f<span class="string">"{rule.feature} not in top {rule.must_be_top_n} drivers"</span>,
+                    <span class="string">"rank"</span>: rank,
+                    <span class="string">"regulation"</span>: rule.regulation,
+                    <span class="string">"action"</span>: rule.action,
+                })
+
+        <span class="keyword">return</span> {
+            <span class="string">"passed"</span>: <span class="func">len</span>(violations) == 0,
+            <span class="string">"violations"</span>: violations,
+            <span class="string">"blocking"</span>: <span class="func">any</span>(v[<span class="string">"action"</span>] == <span class="string">"block"</span> <span class="keyword">for</span> v <span class="keyword">in</span> violations),
+        }
+
+<span class="comment"># ── Example: Well Integrity Guardrails ──</span>
+well_guardrails = <span class="type">SHAPGuardrailEngine</span>([
+    <span class="type">SHAPGuardrail</span>(
+        feature=<span class="string">"annulus_pressure"</span>,
+        must_be_top_n=3,
+        regulation=<span class="string">"PSA Facilities Reg. § 48 — Barrier monitoring"</span>,
+        action=<span class="string">"block"</span>,
+    ),
+    <span class="type">SHAPGuardrail</span>(
+        feature=<span class="string">"casing_integrity_score"</span>,
+        min_shap=0.05,
+        regulation=<span class="string">"NORSOK D-010 — Well barrier requirements"</span>,
+        action=<span class="string">"block"</span>,
+    ),
+    <span class="type">SHAPGuardrail</span>(
+        feature=<span class="string">"temperature_deviation"</span>,
+        max_shap=0.4,
+        regulation=<span class="string">"IEC 61508 — Functional safety bounds"</span>,
+        action=<span class="string">"escalate"</span>,
+    ),
+])</div>
+        </div>
+
+        <!-- TAB: Drift Detection -->
+        <div class="tab-panel" id="tab-drift">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">Monitor SHAP value distributions over time. When the features driving decisions shift, that's an explanation drift signal — triggering re-qualification before output quality degrades.</p>
+
+            <div class="code-block"><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">from</span> scipy <span class="keyword">import</span> stats
+<span class="keyword">from</span> typing <span class="keyword">import</span> Dict, Tuple
+
+<span class="keyword">class</span> <span class="type">SHAPDriftDetector</span>:
+    <span class="string">"""Detect explanation drift using SHAP value distributions."""</span>
+
+    <span class="keyword">def</span> <span class="func">__init__</span>(self, baseline_shap_values: np.ndarray,
+                 feature_names: list, <span class="param">alpha</span>=0.01):
+        self.baseline = baseline_shap_values  <span class="comment"># shape: (n_samples, n_features)</span>
+        self.feature_names = feature_names
+        self.alpha = alpha  <span class="comment"># significance level for drift test</span>
+
+    <span class="keyword">def</span> <span class="func">detect_drift</span>(self, recent_shap_values: np.ndarray) -> <span class="type">Dict</span>:
+        <span class="string">"""Compare recent SHAP distributions against baseline."""</span>
+        drift_report = {<span class="string">"drifted_features"</span>: [], <span class="string">"details"</span>: {}}
+
+        <span class="keyword">for</span> i, name <span class="keyword">in</span> <span class="func">enumerate</span>(self.feature_names):
+            baseline_col = self.baseline[:, i]
+            recent_col = recent_shap_values[:, i]
+
+            <span class="comment"># Kolmogorov-Smirnov test: are distributions different?</span>
+            ks_stat, p_value = stats.<span class="func">ks_2samp</span>(baseline_col, recent_col)
+
+            <span class="comment"># Mean shift in SHAP importance</span>
+            mean_shift = <span class="func">abs</span>(recent_col.<span class="func">mean</span>() - baseline_col.<span class="func">mean</span>())
+
+            <span class="comment"># Rank change detection</span>
+            baseline_rank = self.<span class="func">_importance_rank</span>(self.baseline, i)
+            recent_rank = self.<span class="func">_importance_rank</span>(recent_shap_values, i)
+            rank_change = recent_rank - baseline_rank
+
+            is_drifted = p_value < self.alpha
+
+            drift_report[<span class="string">"details"</span>][name] = {
+                <span class="string">"ks_statistic"</span>: <span class="type">float</span>(ks_stat),
+                <span class="string">"p_value"</span>: <span class="type">float</span>(p_value),
+                <span class="string">"mean_shift"</span>: <span class="type">float</span>(mean_shift),
+                <span class="string">"rank_change"</span>: <span class="type">int</span>(rank_change),
+                <span class="string">"drifted"</span>: is_drifted,
+            }
+
+            <span class="keyword">if</span> is_drifted:
+                drift_report[<span class="string">"drifted_features"</span>].<span class="func">append</span>(name)
+
+        drift_report[<span class="string">"overall_drift"</span>] = <span class="func">len</span>(
+            drift_report[<span class="string">"drifted_features"</span>]
+        ) > 0
+        drift_report[<span class="string">"severity"</span>] = self.<span class="func">_classify_severity</span>(drift_report)
+
+        <span class="keyword">return</span> drift_report
+
+    <span class="keyword">def</span> <span class="func">_classify_severity</span>(self, report) -> <span class="type">str</span>:
+        n = <span class="func">len</span>(report[<span class="string">"drifted_features"</span>])
+        <span class="keyword">if</span> n == 0: <span class="keyword">return</span> <span class="string">"none"</span>
+        <span class="keyword">if</span> n <= 2: <span class="keyword">return</span> <span class="string">"low"</span>           <span class="comment"># monitor</span>
+        <span class="keyword">if</span> n <= 5: <span class="keyword">return</span> <span class="string">"medium"</span>        <span class="comment"># investigate</span>
+        <span class="keyword">return</span> <span class="string">"high"</span>                      <span class="comment"># trigger re-qualification</span></div>
+        </div>
+
+        <!-- TAB: Audit Record -->
+        <div class="tab-panel" id="tab-audit">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">Every decision produces a tamper-evident audit record with SHAP explanation, guardrail results, and cryptographic hash chain — meeting PSA evidence requirements and EU AI Act Art. 12 record-keeping.</p>
+
+            <div class="code-block"><span class="keyword">import</span> hashlib, json
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timezone
+<span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, asdict
+<span class="keyword">from</span> typing <span class="keyword">import</span> Dict, Any, Optional
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> <span class="type">SHAPAuditRecord</span>:
+    <span class="string">"""Immutable, hash-chained audit record for one agent decision."""</span>
+
+    <span class="comment"># Identity</span>
+    record_id: <span class="type">str</span>
+    agent_id: <span class="type">str</span>
+    use_case: <span class="type">str</span>                    <span class="comment"># e.g., "well-integrity-assessment"</span>
+    timestamp: <span class="type">str</span>                    <span class="comment"># ISO 8601 UTC</span>
+
+    <span class="comment"># Decision</span>
+    decision: <span class="type">Any</span>                     <span class="comment"># the agent's output</span>
+    confidence: <span class="type">float</span>                 <span class="comment"># model confidence score</span>
+
+    <span class="comment"># SHAP Explanation</span>
+    shap_base_value: <span class="type">float</span>            <span class="comment"># expected value (population average)</span>
+    shap_attributions: <span class="type">Dict</span>[<span class="type">str</span>, <span class="type">float</span>]  <span class="comment"># feature → SHAP value</span>
+    shap_top_drivers: list            <span class="comment"># top-N features by |SHAP|</span>
+
+    <span class="comment"># Guardrails</span>
+    guardrail_passed: <span class="type">bool</span>
+    guardrail_violations: list
+    human_escalated: <span class="type">bool</span>
+
+    <span class="comment"># Regulatory mapping</span>
+    applicable_regulations: list      <span class="comment"># ["PSA §48", "EU AI Act Art.13"]</span>
+    risk_level: <span class="type">str</span>                   <span class="comment"># high / medium / low</span>
+
+    <span class="comment"># Integrity</span>
+    input_hash: <span class="type">str</span>                   <span class="comment"># SHA-256 of input features</span>
+    model_version: <span class="type">str</span>               <span class="comment"># model artifact identifier</span>
+    previous_record_hash: <span class="type">str</span>        <span class="comment"># chain to previous record</span>
+    record_hash: <span class="type">str</span> = <span class="string">""</span>            <span class="comment"># computed on creation</span>
+
+    <span class="keyword">def</span> <span class="func">__post_init__</span>(self):
+        <span class="comment"># Compute tamper-evident hash of this entire record</span>
+        payload = json.<span class="func">dumps</span>(<span class="func">asdict</span>(self), <span class="param">sort_keys</span>=<span class="type">True</span>, <span class="param">default</span>=<span class="type">str</span>)
+        self.record_hash = hashlib.<span class="func">sha256</span>(
+            payload.<span class="func">encode</span>()
+        ).<span class="func">hexdigest</span>()
+
+<span class="comment"># ── Store to WORM-compliant immutable storage ──</span>
+<span class="keyword">def</span> <span class="func">store_audit_record</span>(record: <span class="type">SHAPAuditRecord</span>, store):
+    <span class="string">"""Persist to tamper-proof storage (Azure Blob WORM / S3 Object Lock)."""</span>
+    payload = json.<span class="func">dumps</span>(<span class="func">asdict</span>(record), <span class="param">indent</span>=2, <span class="param">default</span>=<span class="type">str</span>)
+    store.<span class="func">write_immutable</span>(
+        <span class="param">key</span>=f<span class="string">"audit/{record.use_case}/{record.record_id}.json"</span>,
+        <span class="param">data</span>=payload,
+        <span class="param">content_hash</span>=record.record_hash,
+    )</div>
+        </div>
+
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 4: INTEGRATION WITH QUALIFICATION FRAMEWORK
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="integration">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            4 — Integration with Qualification Framework
+            <span class="badge badge-amber">Integration</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">How SHAP maps to each layer of the <a href="index.html">Regulatory Qualification Framework</a>.</p>
+
+        <table class="data-table">
+            <thead>
+                <tr><th>Framework Layer</th><th>SHAP Integration Point</th><th>Evidence Produced</th><th>Regulation</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--red)"></span>1. Regulatory Landscape</td>
+                    <td>Risk classification informed by SHAP — higher feature sensitivity = higher risk tier</td>
+                    <td>Feature sensitivity analysis per use-case</td>
+                    <td>EU AI Act Art. 6</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--accent)"></span>2. Technology Qualification</td>
+                    <td>SHAP stability tests as qualification test cases; baseline SHAP profiles as acceptance criteria</td>
+                    <td>SHAP consistency report, baseline envelope definition</td>
+                    <td>DNV-RP-A203 Stage 1-2</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--green)"></span>3. Agent Qualification</td>
+                    <td>SHAP middleware attached at sandbox validation; guardrail rules defined at gate review</td>
+                    <td>Per-decision explanation records, guardrail configuration</td>
+                    <td>PSA Management Reg. §§ 4-5</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--amber)"></span>4. Audit Trail</td>
+                    <td>Every decision → hash-chained SHAP audit record in WORM storage</td>
+                    <td>Immutable explanation records with cryptographic integrity</td>
+                    <td>EU AI Act Art. 12, PSA</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--purple)"></span>5. Runtime Governance</td>
+                    <td>SHAP drift detector monitors explanation distributions; SHAP guardrails enforce boundaries</td>
+                    <td>Drift alerts, guardrail violation logs, re-qualification triggers</td>
+                    <td>IEC 61508, PSA</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--teal)"></span>6. Use-Case Classification</td>
+                    <td>SHAP depth varies by risk level: full per-decision for High, sampled for Medium, aggregate for Low</td>
+                    <td>Tiered explanation policy per use-case</td>
+                    <td>EU AI Act risk tiers</td>
+                </tr>
+                <tr>
+                    <td><span class="status-dot" style="background:var(--pink)"></span>7. Evidence Lifecycle</td>
+                    <td>SHAP records feed directly into evidence packs; force plots in audit report PDFs</td>
+                    <td>Pre-packaged SHAP evidence bundles per regulation</td>
+                    <td>All applicable</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 5: PIPELINE — END TO END
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="pipeline">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            5 — End-to-End Pipeline — From Sensor to Audit
+            <span class="badge badge-teal">Pipeline</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">A complete decision cycle showing how SHAP is embedded at every stage.</p>
+
+        <div class="pipeline">
+            <div class="pipeline-stage">
+                <div class="stage-icon">📡</div>
+                <h4>Ingest</h4>
+                <p>Sensor data, SCADA, operational params enter Feature Store (Feast)</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--accent)">
+                <div class="stage-icon">🧮</div>
+                <h4>Feature Engineering</h4>
+                <p>Versioned features with lineage tracking. Background dataset maintained here</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage">
+                <div class="stage-icon">🤖</div>
+                <h4>Agent Decision</h4>
+                <p>Model predicts (XGBoost / LLM). SHAP Middleware intercepts</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--green)">
+                <div class="stage-icon">🧮</div>
+                <h4>SHAP Compute</h4>
+                <p>TreeSHAP / KernelSHAP generates per-feature attributions</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--red)">
+                <div class="stage-icon">🛡️</div>
+                <h4>Guardrail Check</h4>
+                <p>SHAP envelope validation. Fail-closed on violation</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--amber)">
+                <div class="stage-icon">📝</div>
+                <h4>Audit Record</h4>
+                <p>Hash-chained record to WORM storage with full SHAP payload</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--purple)">
+                <div class="stage-icon">📊</div>
+                <h4>Monitor</h4>
+                <p>SHAP drift detection. Grafana dashboards. Re-qual triggers</p>
+            </div>
+        </div>
+
+        <div class="info-note" style="margin-top:1rem;">
+            <strong>Human gates:</strong> At steps 5 (Guardrail Check) and 7 (Monitor), humans are brought in when SHAP attribution patterns are anomalous. The system is fail-closed — blocked decisions require human approval to proceed.
+        </div>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 6: OIL & GAS USE CASES
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="use-cases">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            6 — Oil &amp; Gas Use Cases with SHAP
+            <span class="badge badge-red">Domain</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <div class="component-row">
+            <div class="component">
+                <h3>🛢️ Well Integrity Agent</h3>
+                <p>Predicts barrier failure risk from annulus pressure, casing integrity, temperature, mud weight, cement bond logs.</p>
+                <ul>
+                    <li><strong style="color:var(--text)">SHAP proves:</strong> Agent weights annulus_pressure and casing_integrity as top-2 drivers — aligned with PSA barrier requirements</li>
+                    <li><strong style="color:var(--text)">Guardrail:</strong> annulus_pressure must be top-3 feature or decision is blocked</li>
+                    <li><strong style="color:var(--text)">Explainer:</strong> TreeSHAP (XGBoost model on sensor time-series)</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag tag-accent">PSA § 48</span>
+                    <span class="tag tag-accent">NORSOK D-010</span>
+                    <span class="tag">High Risk</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>🔧 Maintenance Scheduling Agent</h3>
+                <p>Prioritizes maintenance tasks based on equipment criticality, failure probability, safety impact, cost, resource availability.</p>
+                <ul>
+                    <li><strong style="color:var(--text)">SHAP proves:</strong> Safety-critical equipment scores dominate over cost optimization features</li>
+                    <li><strong style="color:var(--text)">Guardrail:</strong> safety_impact SHAP value must exceed cost SHAP value</li>
+                    <li><strong style="color:var(--text)">Explainer:</strong> TreeSHAP (LightGBM priority ranker)</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag tag-accent">PSA MTO</span>
+                    <span class="tag tag-accent">NORSOK Z-008</span>
+                    <span class="tag">Medium Risk</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>📋 Regulatory Compliance Agent</h3>
+                <p>Flags non-conformities by analyzing operational reports against regulation requirements. LLM-based with structured feature extraction.</p>
+                <ul>
+                    <li><strong style="color:var(--text)">SHAP proves:</strong> Which regulation clauses and evidence factors drove each flag</li>
+                    <li><strong style="color:var(--text)">Guardrail:</strong> Regulation-reference features must appear in top-5 drivers</li>
+                    <li><strong style="color:var(--text)">Explainer:</strong> KernelSHAP (LLM structured output → tabular features)</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag tag-accent">PSA §§ 4-5</span>
+                    <span class="tag tag-accent">EU AI Act Art. 14</span>
+                    <span class="tag">Medium Risk</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>🌿 Emissions Monitoring Agent</h3>
+                <p>Predicts and attributes emissions from production data, flaring records, equipment status, weather conditions.</p>
+                <ul>
+                    <li><strong style="color:var(--text)">SHAP proves:</strong> Agent weights actual emission measurements over proxy indicators</li>
+                    <li><strong style="color:var(--text)">Guardrail:</strong> direct_measurement features must outrank proxy features</li>
+                    <li><strong style="color:var(--text)">Explainer:</strong> TreeSHAP (XGBoost regressor)</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag tag-accent">EU ETS</span>
+                    <span class="tag tag-accent">PSA Environment</span>
+                    <span class="tag">Medium Risk</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>⚡ Drilling Parameter Advisor</h3>
+                <p>Recommends WOB, RPM, flow rate adjustments based on real-time drilling data, formation properties, and historical well data.</p>
+                <ul>
+                    <li><strong style="color:var(--text)">SHAP proves:</strong> Formation pressure and kick indicators dominate safety-critical recommendations</li>
+                    <li><strong style="color:var(--text)">Guardrail:</strong> kick_indicator SHAP must be positive when kick risk is elevated</li>
+                    <li><strong style="color:var(--text)">Explainer:</strong> DeepSHAP (LSTM on streaming sensor data)</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag tag-accent">PSA Drilling</span>
+                    <span class="tag tag-accent">DNV-RP-A203</span>
+                    <span class="tag">High Risk</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 7: SHAP EXPLAINER SELECTION GUIDE
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="explainer-guide">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            7 — SHAP Explainer Selection Guide
+            <span class="badge badge-orange">Reference</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">Choose the right SHAP explainer based on your agent's model type and latency requirements.</p>
+
+        <table class="data-table">
+            <thead>
+                <tr><th>Explainer</th><th>Model Types</th><th>Speed</th><th>Exact?</th><th>Oil &amp; Gas Use Case</th><th>Python Class</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong style="color:var(--green)">TreeSHAP</strong></td>
+                    <td>XGBoost, LightGBM, Random Forest, CatBoost</td>
+                    <td><span class="status-dot" style="background:var(--green)"></span>Fast (O(TLD²))</td>
+                    <td>Yes</td>
+                    <td>Well integrity, maintenance, emissions (tabular sensor data)</td>
+                    <td><code>shap.TreeExplainer</code></td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--amber)">KernelSHAP</strong></td>
+                    <td>Any model (model-agnostic)</td>
+                    <td><span class="status-dot" style="background:var(--amber)"></span>Medium (sampling-based)</td>
+                    <td>Approximate</td>
+                    <td>LLM-based agents, ensemble models, black-box APIs</td>
+                    <td><code>shap.KernelExplainer</code></td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--purple)">DeepSHAP</strong></td>
+                    <td>Neural networks (PyTorch, TensorFlow)</td>
+                    <td><span class="status-dot" style="background:var(--amber)"></span>Medium</td>
+                    <td>Approximate</td>
+                    <td>Drilling advisor (LSTM), anomaly detection (autoencoder)</td>
+                    <td><code>shap.DeepExplainer</code></td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--accent-light)">LinearSHAP</strong></td>
+                    <td>Linear / logistic regression</td>
+                    <td><span class="status-dot" style="background:var(--green)"></span>Very Fast</td>
+                    <td>Yes</td>
+                    <td>Compliance scoring, risk classification (interpretable baselines)</td>
+                    <td><code>shap.LinearExplainer</code></td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--pink)">PermutationSHAP</strong></td>
+                    <td>Any model (model-agnostic)</td>
+                    <td><span class="status-dot" style="background:var(--red)"></span>Slow</td>
+                    <td>Approximate</td>
+                    <td>Validation / cross-check of primary explainer results</td>
+                    <td><code>shap.PermutationExplainer</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-note" style="margin-top:.75rem;">
+            <strong>Recommendation for real-time agents:</strong> Use <strong>TreeSHAP</strong> with tree-based models for sub-millisecond explanations on tabular sensor data. For LLM-based agents, extract structured features first, then apply <strong>KernelSHAP</strong> on the structured representation. Reserve <strong>DeepSHAP</strong> for neural network models on streaming time-series (drilling, process control).
+        </div>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 8: REGULATORY COMPLIANCE MAPPING
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="regulatory-mapping">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            8 — Regulatory Compliance &amp; Defensibility Mapping
+            <span class="badge badge-red">Compliance</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">How SHAP satisfies specific regulatory requirements in Norwegian Oil &amp; Gas operations.</p>
+
+        <table class="data-table">
+            <thead>
+                <tr><th>Regulation</th><th>Article / Section</th><th>Requirement</th><th>How SHAP Satisfies</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong style="color:var(--red)">EU AI Act</strong></td>
+                    <td>Art. 13 (Transparency)</td>
+                    <td>High-risk AI must provide meaningful explanations</td>
+                    <td>SHAP values = mathematically grounded per-feature attribution with proven theoretical basis</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--red)">EU AI Act</strong></td>
+                    <td>Art. 14 (Human oversight)</td>
+                    <td>Humans must understand AI output to exercise oversight</td>
+                    <td>SHAP force plots make decision drivers visually interpretable; guardrails escalate anomalies</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--red)">EU AI Act</strong></td>
+                    <td>Art. 12 (Record-keeping)</td>
+                    <td>Automatic logging of AI system operation</td>
+                    <td>Hash-chained SHAP audit records in WORM storage with complete decision context</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--amber)">PSA</strong></td>
+                    <td>Management Reg. §§ 4-5</td>
+                    <td>Risk management and barrier monitoring</td>
+                    <td>SHAP guardrails ensure barrier-relevant features drive decisions; violations block action</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--amber)">PSA</strong></td>
+                    <td>Facilities Reg. § 48</td>
+                    <td>Barrier monitoring and performance standards</td>
+                    <td>SHAP tracks whether barrier sensor features maintain expected attribution weight over time</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--teal)">DNV-RP-A203</strong></td>
+                    <td>Stage 1-2 Qualification</td>
+                    <td>Technology qualification through testing evidence</td>
+                    <td>SHAP stability tests serve as qualification test cases; baseline envelopes define pass criteria</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--teal)">IEC 61508</strong></td>
+                    <td>Functional Safety</td>
+                    <td>Safety-instrumented functions must be verifiable</td>
+                    <td>SHAP proves safety-critical features maintain correct sensitivity across operating conditions</td>
+                </tr>
+                <tr>
+                    <td><strong style="color:var(--purple)">GDPR</strong></td>
+                    <td>Art. 22</td>
+                    <td>Right to explanation for automated decisions</td>
+                    <td>SHAP provides individual-level explanations for any decision affecting personnel</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 9: DEPLOYMENT STRATEGY
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="deployment">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            9 — Deployment Strategy &amp; Infrastructure
+            <span class="badge badge-green">Deployment</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <div class="component-row">
+            <div class="component">
+                <h3>☁️ Cloud Infrastructure</h3>
+                <ul>
+                    <li><strong style="color:var(--text)">Compute:</strong> Azure ML / AKS for SHAP service pods</li>
+                    <li><strong style="color:var(--text)">Storage:</strong> Azure Blob (immutable policy) for WORM audit</li>
+                    <li><strong style="color:var(--text)">Database:</strong> TimescaleDB on Azure for SHAP time-series</li>
+                    <li><strong style="color:var(--text)">Queue:</strong> Azure Service Bus for async explanation jobs</li>
+                    <li><strong style="color:var(--text)">Registry:</strong> MLflow on Azure ML for model + explainer versioning</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag">Azure</span>
+                    <span class="tag">Kubernetes</span>
+                    <span class="tag">Managed Services</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>🔒 Security &amp; Access</h3>
+                <ul>
+                    <li><strong style="color:var(--text)">RBAC:</strong> Separate roles for SHAP config vs. read-only audit</li>
+                    <li><strong style="color:var(--text)">Encryption:</strong> TLS in transit, AES-256 at rest</li>
+                    <li><strong style="color:var(--text)">Network:</strong> Private endpoints, no public SHAP API exposure</li>
+                    <li><strong style="color:var(--text)">Audit:</strong> Azure Monitor + Sentinel for access logging</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag">Sikkerhetsloven</span>
+                    <span class="tag">NIS2</span>
+                    <span class="tag">Zero Trust</span>
+                </div>
+            </div>
+            <div class="component">
+                <h3>📈 Scaling Strategy</h3>
+                <ul>
+                    <li><strong style="color:var(--text)">Real-time:</strong> TreeSHAP in-process (~0.1ms per decision)</li>
+                    <li><strong style="color:var(--text)">Near-real-time:</strong> KernelSHAP via Celery workers (~1-5s)</li>
+                    <li><strong style="color:var(--text)">Batch:</strong> Nightly SHAP drift analysis on GPU nodes</li>
+                    <li><strong style="color:var(--text)">Caching:</strong> Redis for repeated feature pattern explanations</li>
+                </ul>
+                <div class="tag-row">
+                    <span class="tag">Horizontal Scaling</span>
+                    <span class="tag">GPU Optional</span>
+                    <span class="tag">Edge-Compatible</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-note" style="margin-top:.75rem;">
+            <strong>Edge deployment note:</strong> For offshore platforms with limited connectivity, TreeSHAP can run locally on edge hardware. SHAP records are queued and synced to cloud WORM storage when connectivity is restored — maintaining audit completeness even during communication blackouts.
+        </div>
+    </div>
+</div>
+
+<div class="flow-connector">▼</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 10: THE DEFENSIBLE POSITION
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section" data-section="defensible-position">
+    <div class="section-header" onclick="toggleSection(this)">
+        <h2>
+            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+            10 — The Defensible Position
+            <span class="badge badge-pink">Outcome</span>
+        </h2>
+    </div>
+    <div class="section-body">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">The combined system creates a defensibility chain stronger than any manual process can produce today.</p>
+
+        <div class="pipeline">
+            <div class="pipeline-stage" style="border-color:var(--accent)">
+                <div class="stage-icon">🧮</div>
+                <h4>Every Decision Explained</h4>
+                <p>SHAP decomposes every agent action into quantifiable per-feature contributions</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--amber)">
+                <div class="stage-icon">📝</div>
+                <h4>Every Explanation Auditable</h4>
+                <p>Hash-chained immutable records in WORM storage with full decision context</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--red)">
+                <div class="stage-icon">📋</div>
+                <h4>Every Audit Maps to Regulation</h4>
+                <p>Direct traceability from SHAP evidence to PSA, EU AI Act, DNV, IEC articles</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage" style="border-color:var(--green)">
+                <div class="stage-icon">🛡️</div>
+                <h4>Drift Caught Deterministically</h4>
+                <p>SHAP envelope violations trigger re-qualification before harm occurs</p>
+            </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:1.25rem;margin-top:1rem;text-align:center;">
+            <p style="font-size:.95rem;color:var(--text);font-weight:600;margin-bottom:.5rem;">
+                SHAP + Agentic AI + Regulatory Qualification Framework
+            </p>
+            <p style="font-size:.82rem;color:var(--text-muted);">
+                = Every agent decision is <span style="color:var(--accent-light)">explainable</span>,
+                every explanation is <span style="color:var(--amber)">auditable</span>,
+                every audit trail maps to a <span style="color:var(--red)">specific regulation</span>,
+                and drift from validated behavior is caught <span style="color:var(--green)">deterministically</span>.
+            </p>
+            <p style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;">
+                This transforms AI from a regulatory <em>risk</em> into a regulatory <strong style="color:var(--green)">asset</strong>.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSection(header) {
+        header.parentElement.classList.toggle('collapsed');
+    }
+    function expandAll() {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('collapsed'));
+    }
+    function collapseAll() {
+        document.querySelectorAll('.section').forEach(s => s.classList.add('collapsed'));
+    }
+    function switchTab(event, tabId) {
+        const tabBar = event.target.closest('.tab-bar');
+        const tabContainer = tabBar.parentElement;
+
+        tabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        tabContainer.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        tabContainer.querySelector('#' + tabId).classList.add('active');
+    }
+</script>
+
+</body>
+</html>

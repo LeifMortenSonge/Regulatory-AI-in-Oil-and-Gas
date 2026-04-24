@@ -404,6 +404,10 @@ STEPS = [
 ]
 step = st.sidebar.radio("Walk through the pipeline:", STEPS)
 
+# Persist the selected well across all steps
+if "well_idx" not in st.session_state:
+    st.session_state["well_idx"] = 42
+
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
@@ -573,9 +577,11 @@ elif step == STEPS[2]:
     )
 
     st.markdown("### Select a well to assess")
-    if "well_idx" not in st.session_state:
-        st.session_state["well_idx"] = 42
-    well_idx = st.slider("Well sample index", 0, len(data) - 1, key="well_idx")
+    well_idx = st.slider(
+        "Well sample index", 0, len(data) - 1,
+        value=st.session_state["well_idx"],
+    )
+    st.session_state["well_idx"] = well_idx
     sample = data.iloc[well_idx]
     features = sample[FEATURE_NAMES].values.reshape(1, -1)
 

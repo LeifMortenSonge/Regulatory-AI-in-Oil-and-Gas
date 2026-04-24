@@ -679,29 +679,29 @@ elif step == STEPS[3]:
         "Red bars push toward HIGH RISK, blue bars push toward NORMAL."
     )
 
-    # Build waterfall using Plotly instead of shap.plots.waterfall to avoid
-    # matplotlib oversized-figure issues in containerised Streamlit.
+    # Build a horizontal bar chart of signed SHAP values, sorted by magnitude.
+    # Plotly go.Waterfall with small SHAP deltas on a base offset produces
+    # invisible bars, so we use a simple bar chart instead.
     wf_names = [name for name, _ in ranked[:10]]
     wf_values = [val for _, val in ranked[:10]]
-    wf_colors = ["#f87171" if v > 0 else "#4f8ff7" for v in wf_values]
+    wf_colors = ["#f87171" if v > 0 else "#60a5fa" for v in wf_values]
 
-    fig_waterfall = go.Figure(go.Waterfall(
-        orientation="h",
+    fig_waterfall = go.Figure(go.Bar(
         y=wf_names,
         x=wf_values,
-        connector={"line": {"color": "rgba(0,0,0,0)"}},
-        base=base_value,
-        textposition="outside",
+        orientation="h",
+        marker_color=wf_colors,
         text=[f"{v:+.4f}" for v in wf_values],
-        decreasing={"marker": {"color": "#4f8ff7"}},
-        increasing={"marker": {"color": "#f87171"}},
+        textposition="outside",
     ))
     fig_waterfall.update_layout(
-        title=f"Base value: {base_value:.4f} → Prediction: {prediction:.4f}",
+        title=f"Base value: {base_value:.4f}  →  Prediction: {prediction:.4f}",
+        xaxis_title="SHAP Value (impact on model output)",
         yaxis=dict(autorange="reversed"),
         height=450,
         margin=dict(l=200),
     )
+    fig_waterfall.add_vline(x=0, line_color="white", line_width=1)
     st.plotly_chart(fig_waterfall, use_container_width=True)
 
     # ── Bar chart ──

@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI — Regulatory Qualification Framework for Oil &amp; Gas (Norway)</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #232735;
+            --border: #2e3346;
+            --text: #e2e4ea;
+            --text-muted: #8b90a0;
+            --accent: #4f8ff7;
+            --accent-light: #6ba3ff;
+            --green: #34d399;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --purple: #a78bfa;
+            --teal: #2dd4bf;
+            --pink: #f472b6;
+            --radius: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+            color: #fff;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: .95rem;
+            margin-bottom: 2rem;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+        .controls {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: .45rem .9rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: .8rem;
+            transition: all .15s;
+        }
+        .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .controls button.danger:hover { background: var(--red); border-color: var(--red); }
+
+        /* ── SECTION GRID ── */
+        .framework-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        /* ── SWIM-LANE SECTION ── */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: .75rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .section-header .badge {
+            font-size: .65rem;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .badge-blue   { background: rgba(79,143,247,.15); color: var(--accent-light); }
+        .badge-green  { background: rgba(52,211,153,.15); color: var(--green); }
+        .badge-amber  { background: rgba(251,191,36,.15); color: var(--amber); }
+        .badge-red    { background: rgba(248,113,113,.15); color: var(--red); }
+        .badge-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+        .badge-teal   { background: rgba(45,212,191,.15); color: var(--teal); }
+        .badge-pink   { background: rgba(244,114,182,.15); color: var(--pink); }
+
+        .section-body {
+            padding: 1rem 1.25rem;
+        }
+        .section.collapsed .section-body { display: none; }
+        .collapse-icon { transition: transform .2s; }
+        .section.collapsed .collapse-icon { transform: rotate(-90deg); }
+
+        /* ── COMPONENT CARDS ── */
+        .component-row {
+            display: flex;
+            gap: .75rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .component {
+            flex: 1 1 220px;
+            max-width: 320px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .85rem 1rem;
+            position: relative;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .component:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        .component h3 {
+            font-size: .85rem;
+            font-weight: 600;
+            margin-bottom: .35rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .component p {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: .5rem;
+        }
+        .tag-row { display: flex; gap: .3rem; flex-wrap: wrap; }
+        .tag {
+            font-size: .6rem;
+            padding: .1rem .4rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,.06);
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        .component .remove-btn {
+            position: absolute;
+            top: .4rem;
+            right: .5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: .75rem;
+            opacity: 0;
+            transition: opacity .15s;
+        }
+        .component:hover .remove-btn { opacity: 1; }
+        .component .remove-btn:hover { color: var(--red); }
+
+        /* ── FLOW ARROWS ── */
+        .flow-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: .5rem 0;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        /* ── REGULATION MATRIX ── */
+        .reg-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: .75rem;
+            margin-top: .75rem;
+        }
+        .reg-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .75rem 1rem;
+        }
+        .reg-card h4 {
+            font-size: .8rem;
+            font-weight: 600;
+            margin-bottom: .25rem;
+        }
+        .reg-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .reg-card li {
+            font-size: .72rem;
+            color: var(--text-muted);
+            padding: .15rem 0;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+        }
+        .reg-card li:last-child { border-bottom: none; }
+        .reg-card li::before {
+            content: '→ ';
+            color: var(--accent);
+        }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,.6);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal h3 { margin-bottom: 1rem; font-size: 1rem; }
+        .modal label {
+            display: block;
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-bottom: .25rem;
+            margin-top: .75rem;
+        }
+        .modal input, .modal select, .modal textarea {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .5rem .7rem;
+            color: var(--text);
+            font-size: .85rem;
+        }
+        .modal textarea { min-height: 60px; resize: vertical; }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: .5rem;
+            margin-top: 1.25rem;
+        }
+        .modal-actions button {
+            padding: .45rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: .8rem;
+        }
+        .btn-cancel { background: var(--surface2); color: var(--text); }
+        .btn-save { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        /* ── LEGEND ── */
+        .legend {
+            margin-top: 2.5rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* ── AUDIT TRAIL TABLE ── */
+        .audit-trail {
+            margin-top: .75rem;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .75rem;
+        }
+        .audit-trail th, .audit-trail td {
+            padding: .45rem .6rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .audit-trail th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: .35rem;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .component { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>Agentic AI — Regulatory Qualification Framework</h1>
+        <p class="subtitle">Oil &amp; Gas Norway — Technology Qualification &amp; Audit-Trail Architecture</p>
+    </div>
+    <div class="controls">
+        <button onclick="openAddModal()">+ Add Component</button>
+        <button onclick="expandAll()">Expand All</button>
+        <button onclick="collapseAll()">Collapse All</button>
+        <button onclick="exportJSON()">Export JSON</button>
+        <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+</header>
+
+<div class="framework-grid" id="framework">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 1: REGULATORY LANDSCAPE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="regulatory-landscape">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                1 — Regulatory Landscape &amp; Classification
+                <span class="badge badge-red">Mandatory</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Map each AI use-case to applicable Norwegian &amp; EU regulations. Classification determines audit depth, approval gates, and evidence requirements.</p>
+            <div class="reg-matrix">
+                <div class="reg-card" data-id="reg-psa">
+                    <h4 style="color:var(--red)">PSA (Petroleumstilsynet)</h4>
+                    <ul>
+                        <li>Management Regulations §§ 4-5</li>
+                        <li>Facilities Regulations §§ 7-11</li>
+                        <li>Activities Regulations §§ 21-26</li>
+                        <li>RNNP barrier management</li>
+                        <li>MTO (Man-Technology-Org) analysis</li>
+                    </ul>
+                </div>
+                <div class="reg-card" data-id="reg-euai">
+                    <h4 style="color:var(--amber)">EU AI Act</h4>
+                    <ul>
+                        <li>Risk classification (Art. 6)</li>
+                        <li>High-risk requirements (Art. 9-15)</li>
+                        <li>Transparency obligations (Art. 52)</li>
+                        <li>Conformity assessment (Art. 43)</li>
+                        <li>Post-market monitoring (Art. 61)</li>
+                    </ul>
+                </div>
+                <div class="reg-card" data-id="reg-norsok">
+                    <h4 style="color:var(--teal)">NORSOK / ISO</h4>
+                    <ul>
+                        <li>NORSOK Z-013 Risk assessment</li>
+                        <li>NORSOK S-001 Technical safety</li>
+                        <li>ISO 31000 Risk management</li>
+                        <li>IEC 61508 Functional safety</li>
+                        <li>DNV-RP-A203 Tech qualification</li>
+                    </ul>
+                </div>
+                <div class="reg-card" data-id="reg-data">
+                    <h4 style="color:var(--purple)">Data &amp; Privacy</h4>
+                    <ul>
+                        <li>GDPR / Personopplysningsloven</li>
+                        <li>Sikkerhetsloven (Security Act)</li>
+                        <li>Sokkeldirektivet (Shelf Directive)</li>
+                        <li>DORA (if financial data)</li>
+                        <li>NIS2 Directive</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 2: TECHNOLOGY QUALIFICATION
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="technology-qualification">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                2 — AI Technology Qualification (DNV-RP-A203 Adapted)
+                <span class="badge badge-blue">Foundation</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Qualify the underlying AI technology stack before deploying agents. Follows DNV-RP-A203 stages adapted for AI/ML systems.</p>
+            <div class="component-row" data-lane="tech-qual">
+                <div class="component" data-id="tq-1">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📋 Feasibility Assessment</h3>
+                    <p>Define technology novelty, identify failure modes, map to known limitations of LLMs/agents.</p>
+                    <div class="tag-row">
+                        <span class="tag">DNV Stage 0</span>
+                        <span class="tag">Risk Register</span>
+                        <span class="tag">Gap Analysis</span>
+                    </div>
+                </div>
+                <div class="component" data-id="tq-2">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🧪 Model Validation</h3>
+                    <p>Benchmark accuracy, hallucination rate, bias analysis, robustness testing against adversarial inputs.</p>
+                    <div class="tag-row">
+                        <span class="tag">DNV Stage 1-2</span>
+                        <span class="tag">Test Evidence</span>
+                        <span class="tag">Benchmark Suite</span>
+                    </div>
+                </div>
+                <div class="component" data-id="tq-3">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔒 Security Qualification</h3>
+                    <p>Prompt injection testing, data leakage prevention, guardrail validation, red-team exercises.</p>
+                    <div class="tag-row">
+                        <span class="tag">OWASP LLM Top 10</span>
+                        <span class="tag">Pen Test Report</span>
+                    </div>
+                </div>
+                <div class="component" data-id="tq-4">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📊 Explainability &amp; Transparency</h3>
+                    <p>Document model provenance, training data lineage, decision rationale logging, confidence scoring.</p>
+                    <div class="tag-row">
+                        <span class="tag">EU AI Act Art. 13</span>
+                        <span class="tag">XAI Methods</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 3: AGENT QUALIFICATION PROCESS
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="agent-qualification">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                3 — Agent Qualification Pipeline
+                <span class="badge badge-green">Per Use-Case</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Each Agentic AI use-case runs through a qualification pipeline. Gate reviews produce signed evidence artifacts before promotion.</p>
+            <div class="component-row" data-lane="agent-qual">
+                <div class="component" data-id="aq-1">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🎯 Use-Case Definition</h3>
+                    <p>Business objective, scope boundary, human-in-the-loop requirements, autonomy level classification (L0–L4).</p>
+                    <div class="tag-row">
+                        <span class="tag">RACI Matrix</span>
+                        <span class="tag">Autonomy Level</span>
+                    </div>
+                </div>
+                <div class="component" data-id="aq-2">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>⚖️ Risk &amp; Impact Assessment</h3>
+                    <p>HAZOP/HAZID for AI, consequence analysis, barrier identification, SIL determination if safety-critical.</p>
+                    <div class="tag-row">
+                        <span class="tag">NORSOK Z-013</span>
+                        <span class="tag">Bow-Tie</span>
+                        <span class="tag">ALARP</span>
+                    </div>
+                </div>
+                <div class="component" data-id="aq-3">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔬 Sandbox Validation</h3>
+                    <p>Isolated environment testing with production-like data. Measure against acceptance criteria. Record all agent decisions.</p>
+                    <div class="tag-row">
+                        <span class="tag">Test Protocols</span>
+                        <span class="tag">Acceptance Criteria</span>
+                    </div>
+                </div>
+                <div class="component" data-id="aq-4">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>✅ Gate Review &amp; Approval</h3>
+                    <p>Multi-stakeholder review: technical, regulatory, HSE, legal. Signed decision record with conditions.</p>
+                    <div class="tag-row">
+                        <span class="tag">Gate Checklist</span>
+                        <span class="tag">Sign-off Log</span>
+                    </div>
+                </div>
+                <div class="component" data-id="aq-5">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🚀 Controlled Deployment</h3>
+                    <p>Phased rollout with monitoring. Shadow-mode → supervised → autonomous. Rollback procedures documented.</p>
+                    <div class="tag-row">
+                        <span class="tag">Deployment Plan</span>
+                        <span class="tag">Rollback SOP</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 4: AUDIT TRAIL ARCHITECTURE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="audit-trail">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                4 — Audit Trail &amp; Evidence Architecture
+                <span class="badge badge-amber">Continuous</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Every agent interaction produces immutable, timestamped evidence. The audit trail must be defensible under PSA inspection and EU AI Act conformity assessment.</p>
+            <div class="component-row" data-lane="audit-trail">
+                <div class="component" data-id="at-1">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📝 Decision Logging</h3>
+                    <p>Full input/output capture, reasoning chain, tool calls, confidence scores. Immutable append-only store.</p>
+                    <div class="tag-row">
+                        <span class="tag">Structured Logs</span>
+                        <span class="tag">Chain-of-Thought</span>
+                    </div>
+                </div>
+                <div class="component" data-id="at-2">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔗 Evidence Chain</h3>
+                    <p>Cryptographic hashing of evidence artifacts. Tamper-evident linking between qualification stages.</p>
+                    <div class="tag-row">
+                        <span class="tag">SHA-256</span>
+                        <span class="tag">Merkle Tree</span>
+                        <span class="tag">Timestamping</span>
+                    </div>
+                </div>
+                <div class="component" data-id="at-3">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>👤 Human Override Log</h3>
+                    <p>Record every human intervention, override, or correction. Link to original agent decision for traceability.</p>
+                    <div class="tag-row">
+                        <span class="tag">Override Reason</span>
+                        <span class="tag">Corrective Action</span>
+                    </div>
+                </div>
+                <div class="component" data-id="at-4">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📦 Evidence Repository</h3>
+                    <p>Centralized, versioned storage for all qualification artifacts, test results, approval records, and audit logs.</p>
+                    <div class="tag-row">
+                        <span class="tag">WORM Storage</span>
+                        <span class="tag">Retention Policy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 5: RUNTIME GOVERNANCE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="runtime-governance">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                5 — Runtime Governance &amp; Monitoring
+                <span class="badge badge-purple">Operational</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Post-deployment monitoring ensures agents stay within qualified boundaries. Drift detection triggers re-qualification.</p>
+            <div class="component-row" data-lane="runtime-gov">
+                <div class="component" data-id="rg-1">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📡 Performance Monitoring</h3>
+                    <p>Real-time accuracy, latency, error rate dashboards. Alerting on degradation beyond qualified thresholds.</p>
+                    <div class="tag-row">
+                        <span class="tag">KPI Dashboard</span>
+                        <span class="tag">SLA Tracking</span>
+                    </div>
+                </div>
+                <div class="component" data-id="rg-2">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🎛️ Guardrails &amp; Boundaries</h3>
+                    <p>Hard limits on agent actions, content filtering, scope constraints, automatic escalation to human.</p>
+                    <div class="tag-row">
+                        <span class="tag">Policy Engine</span>
+                        <span class="tag">Kill Switch</span>
+                    </div>
+                </div>
+                <div class="component" data-id="rg-3">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔄 Drift Detection</h3>
+                    <p>Monitor for model drift, data drift, concept drift. Automated alerts when agent behavior deviates from qualification baseline.</p>
+                    <div class="tag-row">
+                        <span class="tag">Statistical Tests</span>
+                        <span class="tag">Re-qual Trigger</span>
+                    </div>
+                </div>
+                <div class="component" data-id="rg-4">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔁 Continuous Re-qualification</h3>
+                    <p>Scheduled and event-triggered re-assessment. Model updates, data changes, or regulatory changes trigger full or partial re-qual.</p>
+                    <div class="tag-row">
+                        <span class="tag">Change Management</span>
+                        <span class="tag">MoC Process</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 6: USE-CASE CLASSIFICATION MATRIX
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="usecase-matrix">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                6 — Use-Case Classification &amp; Regulatory Mapping
+                <span class="badge badge-teal">Reference</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">Example use-cases mapped to risk level, primary regulation, and required audit depth.</p>
+            <table class="audit-trail">
+                <thead>
+                    <tr>
+                        <th>Use-Case</th>
+                        <th>Domain</th>
+                        <th>Risk Level</th>
+                        <th>Primary Regulation</th>
+                        <th>Audit Depth</th>
+                        <th>Human-in-Loop</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Well Integrity Assessment Agent</td>
+                        <td>Operations / HSE</td>
+                        <td><span class="status-dot" style="background:var(--red)"></span>High</td>
+                        <td>PSA + IEC 61508</td>
+                        <td>Full qualification</td>
+                        <td>Mandatory</td>
+                    </tr>
+                    <tr>
+                        <td>Production Optimization Agent</td>
+                        <td>Reservoir / Production</td>
+                        <td><span class="status-dot" style="background:var(--amber)"></span>Medium</td>
+                        <td>PSA + NORSOK</td>
+                        <td>Standard qualification</td>
+                        <td>Supervised</td>
+                    </tr>
+                    <tr>
+                        <td>Procurement Workflow Agent</td>
+                        <td>Supply Chain</td>
+                        <td><span class="status-dot" style="background:var(--green)"></span>Low</td>
+                        <td>EU AI Act (Limited)</td>
+                        <td>Simplified qualification</td>
+                        <td>Optional</td>
+                    </tr>
+                    <tr>
+                        <td>Drilling Parameter Advisor</td>
+                        <td>Drilling</td>
+                        <td><span class="status-dot" style="background:var(--red)"></span>High</td>
+                        <td>PSA + DNV-RP-A203</td>
+                        <td>Full qualification</td>
+                        <td>Mandatory</td>
+                    </tr>
+                    <tr>
+                        <td>Maintenance Planning Agent</td>
+                        <td>Asset Integrity</td>
+                        <td><span class="status-dot" style="background:var(--amber)"></span>Medium</td>
+                        <td>PSA + NORSOK Z-008</td>
+                        <td>Standard qualification</td>
+                        <td>Supervised</td>
+                    </tr>
+                    <tr>
+                        <td>Document Summarization Agent</td>
+                        <td>Knowledge Mgmt</td>
+                        <td><span class="status-dot" style="background:var(--green)"></span>Low</td>
+                        <td>EU AI Act (Minimal)</td>
+                        <td>Self-assessment</td>
+                        <td>Optional</td>
+                    </tr>
+                    <tr>
+                        <td>Emissions Monitoring Agent</td>
+                        <td>Environment</td>
+                        <td><span class="status-dot" style="background:var(--amber)"></span>Medium</td>
+                        <td>PSA + EU ETS</td>
+                        <td>Standard qualification</td>
+                        <td>Supervised</td>
+                    </tr>
+                    <tr>
+                        <td>Personnel Competency Agent</td>
+                        <td>HR / Competency</td>
+                        <td><span class="status-dot" style="background:var(--amber)"></span>Medium</td>
+                        <td>EU AI Act (High) + GDPR</td>
+                        <td>Standard qualification</td>
+                        <td>Mandatory</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="flow-connector">▼</div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTION 7: EVIDENCE LIFECYCLE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section" data-section="evidence-lifecycle">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4"/></svg>
+                7 — Evidence Lifecycle &amp; Defensibility
+                <span class="badge badge-pink">Assurance</span>
+            </h2>
+        </div>
+        <div class="section-body">
+            <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">End-to-end evidence management ensuring defensibility under regulatory inspection, internal audit, and legal discovery.</p>
+            <div class="component-row" data-lane="evidence-lc">
+                <div class="component" data-id="el-1">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🏗️ Evidence Generation</h3>
+                    <p>Automated capture at every decision point: agent reasoning, data sources consulted, tools invoked, outcomes produced.</p>
+                    <div class="tag-row">
+                        <span class="tag">Auto-Capture</span>
+                        <span class="tag">Structured Format</span>
+                    </div>
+                </div>
+                <div class="component" data-id="el-2">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>🔍 Evidence Review</h3>
+                    <p>Periodic sampling and quality review of evidence. Cross-reference with qualification criteria and regulatory requirements.</p>
+                    <div class="tag-row">
+                        <span class="tag">QA Process</span>
+                        <span class="tag">Sampling Plan</span>
+                    </div>
+                </div>
+                <div class="component" data-id="el-3">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>📋 Audit Readiness</h3>
+                    <p>Pre-packaged evidence bundles per regulation. Rapid retrieval for PSA inspections or EU conformity checks.</p>
+                    <div class="tag-row">
+                        <span class="tag">Evidence Packs</span>
+                        <span class="tag">Reg. Mapping</span>
+                    </div>
+                </div>
+                <div class="component" data-id="el-4">
+                    <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                    <h3>⚖️ Legal Defensibility</h3>
+                    <p>Chain of custody for all evidence. Expert witness readiness. Documentation of due diligence and reasonable care.</p>
+                    <div class="tag-row">
+                        <span class="tag">Chain of Custody</span>
+                        <span class="tag">Due Diligence</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── LEGEND ── -->
+<div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> High Risk — Full Qualification</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Medium Risk — Standard Qualification</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Low Risk — Simplified Qualification</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Technology Layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Governance Layer</div>
+</div>
+
+<!-- ── ADD COMPONENT MODAL ── -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <h3>Add Process Component</h3>
+        <label>Section</label>
+        <select id="modal-section">
+            <option value="technology-qualification">2 — Technology Qualification</option>
+            <option value="agent-qualification">3 — Agent Qualification Pipeline</option>
+            <option value="audit-trail">4 — Audit Trail &amp; Evidence</option>
+            <option value="runtime-governance">5 — Runtime Governance</option>
+            <option value="evidence-lifecycle">7 — Evidence Lifecycle</option>
+        </select>
+        <label>Component Name</label>
+        <input type="text" id="modal-name" placeholder="e.g., Bias Monitoring">
+        <label>Icon (emoji)</label>
+        <input type="text" id="modal-icon" placeholder="e.g., 🔍" maxlength="4" style="width:60px">
+        <label>Description</label>
+        <textarea id="modal-desc" placeholder="Brief description of this process component..."></textarea>
+        <label>Tags (comma-separated)</label>
+        <input type="text" id="modal-tags" placeholder="e.g., EU AI Act, Fairness, Monthly">
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-save" onclick="addComponent()">Add Component</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ── Section collapse/expand ── */
+    function toggleSection(header) {
+        header.parentElement.classList.toggle('collapsed');
+    }
+    function expandAll() {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('collapsed'));
+    }
+    function collapseAll() {
+        document.querySelectorAll('.section').forEach(s => s.classList.add('collapsed'));
+    }
+
+    /* ── Remove component ── */
+    function removeComponent(btn) {
+        if (confirm('Remove this component?')) {
+            btn.closest('.component').remove();
+        }
+    }
+
+    /* ── Modal ── */
+    function openAddModal() {
+        document.getElementById('addModal').classList.add('active');
+    }
+    function closeModal() {
+        document.getElementById('addModal').classList.remove('active');
+        document.getElementById('modal-name').value = '';
+        document.getElementById('modal-icon').value = '';
+        document.getElementById('modal-desc').value = '';
+        document.getElementById('modal-tags').value = '';
+    }
+    function addComponent() {
+        const section = document.getElementById('modal-section').value;
+        const name = document.getElementById('modal-name').value.trim();
+        const icon = document.getElementById('modal-icon').value.trim() || '📌';
+        const desc = document.getElementById('modal-desc').value.trim();
+        const tags = document.getElementById('modal-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+        if (!name) { alert('Please enter a component name.'); return; }
+
+        const lane = document.querySelector(`.section[data-section="${section}"] .component-row`);
+        if (!lane) { alert('Section not found.'); return; }
+
+        const id = 'custom-' + Date.now();
+        const tagHTML = tags.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('');
+
+        const div = document.createElement('div');
+        div.className = 'component';
+        div.dataset.id = id;
+        div.innerHTML = `
+            <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+            <h3>${escapeHTML(icon)} ${escapeHTML(name)}</h3>
+            <p>${escapeHTML(desc)}</p>
+            <div class="tag-row">${tagHTML}</div>
+        `;
+        lane.appendChild(div);
+        closeModal();
+    }
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    /* ── Export / Import ── */
+    function exportJSON() {
+        const data = { version: 1, exported: new Date().toISOString(), sections: [] };
+        document.querySelectorAll('.section').forEach(section => {
+            const sectionData = {
+                id: section.dataset.section,
+                components: []
+            };
+            section.querySelectorAll('.component').forEach(comp => {
+                sectionData.components.push({
+                    id: comp.dataset.id,
+                    name: comp.querySelector('h3')?.textContent.trim() || '',
+                    description: comp.querySelector('p')?.textContent.trim() || '',
+                    tags: Array.from(comp.querySelectorAll('.tag')).map(t => t.textContent)
+                });
+            });
+            data.sections.push(sectionData);
+        });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'regulatory-ai-framework.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.version !== 1) { alert('Unsupported format version.'); return; }
+                data.sections.forEach(sec => {
+                    const lane = document.querySelector(`.section[data-section="${sec.id}"] .component-row`);
+                    if (!lane) return;
+                    lane.innerHTML = '';
+                    sec.components.forEach(comp => {
+                        const tagHTML = (comp.tags || []).map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('');
+                        const div = document.createElement('div');
+                        div.className = 'component';
+                        div.dataset.id = comp.id;
+                        div.innerHTML = `
+                            <button class="remove-btn" onclick="removeComponent(this)" title="Remove">✕</button>
+                            <h3>${escapeHTML(comp.name)}</h3>
+                            <p>${escapeHTML(comp.description)}</p>
+                            <div class="tag-row">${tagHTML}</div>
+                        `;
+                        lane.appendChild(div);
+                    });
+                });
+                alert('Framework imported successfully.');
+            } catch (err) {
+                alert('Invalid JSON file.');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+</script>
+
+</body>
+</html>

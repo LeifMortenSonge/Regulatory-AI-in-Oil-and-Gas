@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI Qualification — Slide Deck</title>
+    <style>
+        :root {
+            --green-900: #064e3b;
+            --green-700: #047857;
+            --green-600: #059669;
+            --green-500: #10b981;
+            --green-400: #34d399;
+            --green-200: #a7f3d0;
+            --green-100: #d1fae5;
+            --green-50: #ecfdf5;
+            --gray-800: #1f2937;
+            --gray-600: #4b5563;
+            --gray-400: #9ca3af;
+            --gray-200: #e5e7eb;
+            --gray-100: #f3f4f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fff;
+            color: var(--gray-800);
+        }
+
+        /* ── Slide container ── */
+        .deck {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 4rem 5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .4s ease;
+        }
+        .slide.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ── Typography ── */
+        .slide h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--green-900);
+            margin-bottom: .5rem;
+            letter-spacing: -.02em;
+        }
+        .slide h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--green-700);
+            margin-bottom: 1.5rem;
+        }
+        .slide .subtitle {
+            font-size: 1.1rem;
+            color: var(--gray-600);
+            margin-bottom: 2.5rem;
+        }
+        .slide p {
+            font-size: .95rem;
+            color: var(--gray-600);
+            line-height: 1.7;
+            max-width: 48rem;
+        }
+
+        /* ── Cards grid ── */
+        .card-grid {
+            display: grid;
+            gap: 1.25rem;
+            flex: 1;
+            align-content: start;
+        }
+        .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+        .card {
+            background: var(--green-50);
+            border: 1px solid var(--green-200);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--green-900);
+            margin-bottom: .5rem;
+        }
+        .card p {
+            font-size: .82rem;
+            color: var(--gray-600);
+            line-height: 1.6;
+        }
+        .card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .card li {
+            font-size: .82rem;
+            color: var(--gray-600);
+            padding: .25rem 0;
+        }
+        .card li::before {
+            content: '→ ';
+            color: var(--green-600);
+            font-weight: 600;
+        }
+
+        /* ── Flow steps ── */
+        .flow {
+            display: flex;
+            gap: .5rem;
+            align-items: stretch;
+            flex: 1;
+        }
+        .flow-step {
+            flex: 1;
+            background: var(--green-50);
+            border: 1px solid var(--green-200);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .flow-step::after {
+            content: '›';
+            position: absolute;
+            right: -1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: var(--green-400);
+            font-weight: 700;
+        }
+        .flow-step:last-child::after { content: ''; }
+        .flow-step .num {
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--green-600);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: .4rem;
+        }
+        .flow-step h3 {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--green-900);
+            margin-bottom: .4rem;
+        }
+        .flow-step p {
+            font-size: .78rem;
+            color: var(--gray-600);
+            line-height: 1.5;
+        }
+
+        /* ── Table ── */
+        .slide table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+        .slide th {
+            text-align: left;
+            padding: .6rem .8rem;
+            background: var(--green-100);
+            color: var(--green-900);
+            font-weight: 600;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            border-bottom: 2px solid var(--green-200);
+        }
+        .slide td {
+            padding: .55rem .8rem;
+            border-bottom: 1px solid var(--gray-200);
+            color: var(--gray-600);
+        }
+        .risk-high { color: #dc2626; font-weight: 600; }
+        .risk-med { color: #d97706; font-weight: 600; }
+        .risk-low { color: var(--green-600); font-weight: 600; }
+
+        /* ── Slide number ── */
+        .slide-number {
+            position: absolute;
+            bottom: 2rem;
+            right: 3rem;
+            font-size: .75rem;
+            color: var(--gray-400);
+            font-weight: 500;
+        }
+
+        /* ── Navigation ── */
+        .nav {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: .5rem;
+            z-index: 10;
+        }
+        .nav button {
+            background: var(--green-600);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: .5rem 1.2rem;
+            font-size: .8rem;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .nav button:hover { background: var(--green-700); }
+        .nav button:disabled { background: var(--gray-200); color: var(--gray-400); cursor: default; }
+
+        /* ── Divider line ── */
+        .divider {
+            width: 3rem;
+            height: 3px;
+            background: var(--green-400);
+            border-radius: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Title slide special ── */
+        .title-slide {
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .title-slide h1 {
+            font-size: 3rem;
+            margin-bottom: .75rem;
+        }
+        .title-slide .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        .title-slide .meta {
+            font-size: .85rem;
+            color: var(--gray-400);
+        }
+
+        @media print {
+            .nav { display: none; }
+            .slide { position: relative; opacity: 1; pointer-events: all; page-break-after: always; }
+            .deck { height: auto; overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 1 — TITLE
+         ════════════════════════════════════════════════════ -->
+    <div class="slide title-slide active" data-slide="1">
+        <h1>Agentic AI in Oil &amp; Gas</h1>
+        <p class="subtitle">Regulatory Qualification Framework for Norway</p>
+        <div class="divider"></div>
+        <p>A structured approach to qualifying AI agents for deployment in regulated petroleum operations — ensuring auditable, defensible positions across all process stages.</p>
+        <br>
+        <p class="meta">7 sections · Technology Qualification · Agent Governance · Audit Architecture</p>
+        <span class="slide-number">1 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 2 — REGULATORY LANDSCAPE
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="2">
+        <h2>1 — Regulatory Landscape &amp; Classification</h2>
+        <p class="subtitle">Each AI use-case must be mapped to applicable regulations. Classification determines audit depth and approval requirements.</p>
+        <div class="card-grid cols-4">
+            <div class="card">
+                <h3>PSA</h3>
+                <ul>
+                    <li>Management Reg. §§ 4-5</li>
+                    <li>Facilities Reg. §§ 7-11</li>
+                    <li>Activities Reg. §§ 21-26</li>
+                    <li>RNNP barrier mgmt</li>
+                    <li>MTO analysis</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>EU AI Act</h3>
+                <ul>
+                    <li>Risk classification (Art. 6)</li>
+                    <li>High-risk req. (Art. 9-15)</li>
+                    <li>Transparency (Art. 52)</li>
+                    <li>Conformity (Art. 43)</li>
+                    <li>Post-market (Art. 61)</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>NORSOK / ISO</h3>
+                <ul>
+                    <li>Z-013 Risk assessment</li>
+                    <li>S-001 Technical safety</li>
+                    <li>ISO 31000</li>
+                    <li>IEC 61508 Func. safety</li>
+                    <li>DNV-RP-A203</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Data &amp; Privacy</h3>
+                <ul>
+                    <li>GDPR</li>
+                    <li>Sikkerhetsloven</li>
+                    <li>Sokkeldirektivet</li>
+                    <li>DORA</li>
+                    <li>NIS2 Directive</li>
+                </ul>
+            </div>
+        </div>
+        <span class="slide-number">2 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 3 — TECHNOLOGY QUALIFICATION
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="3">
+        <h2>2 — AI Technology Qualification</h2>
+        <p class="subtitle">DNV-RP-A203 adapted for AI/ML — qualify the underlying technology before deploying any agent.</p>
+        <div class="card-grid cols-4">
+            <div class="card">
+                <h3>📋 Feasibility</h3>
+                <p>Technology novelty assessment, failure mode identification, LLM limitation mapping.</p>
+                <ul>
+                    <li>DNV Stage 0</li>
+                    <li>Risk Register</li>
+                    <li>Gap Analysis</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🧪 Validation</h3>
+                <p>Accuracy benchmarks, hallucination rates, bias testing, adversarial robustness.</p>
+                <ul>
+                    <li>DNV Stage 1-2</li>
+                    <li>Test Evidence</li>
+                    <li>Benchmark Suite</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🔒 Security</h3>
+                <p>Prompt injection, data leakage prevention, guardrail testing, red-team exercises.</p>
+                <ul>
+                    <li>OWASP LLM Top 10</li>
+                    <li>Pen Test Report</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>📊 Explainability</h3>
+                <p>Model provenance, training data lineage, decision rationale, confidence scoring.</p>
+                <ul>
+                    <li>EU AI Act Art. 13</li>
+                    <li>XAI Methods</li>
+                </ul>
+            </div>
+        </div>
+        <span class="slide-number">3 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 4 — AGENT QUALIFICATION PIPELINE
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="4">
+        <h2>3 — Agent Qualification Pipeline</h2>
+        <p class="subtitle">Each use-case follows a gated pipeline producing signed evidence at every stage.</p>
+        <div class="flow">
+            <div class="flow-step">
+                <span class="num">Step 1</span>
+                <h3>Use-Case Definition</h3>
+                <p>Business objective, scope boundary, autonomy level (L0–L4), RACI.</p>
+            </div>
+            <div class="flow-step">
+                <span class="num">Step 2</span>
+                <h3>Risk Assessment</h3>
+                <p>HAZOP for AI, consequence analysis, barrier ID, SIL determination.</p>
+            </div>
+            <div class="flow-step">
+                <span class="num">Step 3</span>
+                <h3>Sandbox Validation</h3>
+                <p>Isolated testing, production-like data, acceptance criteria, decision recording.</p>
+            </div>
+            <div class="flow-step">
+                <span class="num">Step 4</span>
+                <h3>Gate Review</h3>
+                <p>Multi-stakeholder sign-off: technical, regulatory, HSE, legal.</p>
+            </div>
+            <div class="flow-step">
+                <span class="num">Step 5</span>
+                <h3>Deployment</h3>
+                <p>Shadow → supervised → autonomous. Rollback procedures documented.</p>
+            </div>
+        </div>
+        <span class="slide-number">4 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 5 — AUDIT TRAIL
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="5">
+        <h2>4 — Audit Trail &amp; Evidence Architecture</h2>
+        <p class="subtitle">Every agent interaction produces immutable, timestamped evidence — defensible under PSA inspection and EU AI Act conformity assessment.</p>
+        <div class="card-grid cols-4">
+            <div class="card">
+                <h3>📝 Decision Logging</h3>
+                <p>Full I/O capture, reasoning chains, tool calls, confidence scores. Append-only immutable store.</p>
+            </div>
+            <div class="card">
+                <h3>🔗 Evidence Chain</h3>
+                <p>SHA-256 hashing, Merkle trees, RFC 3161 timestamping. Tamper-evident linking across stages.</p>
+            </div>
+            <div class="card">
+                <h3>👤 Human Override Log</h3>
+                <p>Every intervention recorded with reason, linked to original agent decision for full traceability.</p>
+            </div>
+            <div class="card">
+                <h3>📦 Evidence Repository</h3>
+                <p>WORM storage, versioned artifacts, retention policies aligned to regulatory requirements.</p>
+            </div>
+        </div>
+        <span class="slide-number">5 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 6 — RUNTIME GOVERNANCE
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="6">
+        <h2>5 — Runtime Governance &amp; Monitoring</h2>
+        <p class="subtitle">Post-deployment controls ensure agents stay within qualified boundaries. Drift triggers re-qualification.</p>
+        <div class="card-grid cols-4">
+            <div class="card">
+                <h3>📡 Performance</h3>
+                <p>Real-time accuracy, latency, error-rate dashboards. Threshold-based alerting.</p>
+            </div>
+            <div class="card">
+                <h3>🎛️ Guardrails</h3>
+                <p>Hard action limits, content filtering, scope constraints, automatic human escalation, kill switch.</p>
+            </div>
+            <div class="card">
+                <h3>🔄 Drift Detection</h3>
+                <p>Model, data, and concept drift monitoring. Statistical tests against qualification baseline.</p>
+            </div>
+            <div class="card">
+                <h3>🔁 Re-qualification</h3>
+                <p>Scheduled + event-triggered. Model updates, data changes, or regulatory changes trigger re-assessment.</p>
+            </div>
+        </div>
+        <span class="slide-number">6 / 7</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         SLIDE 7 — USE-CASE MATRIX
+         ════════════════════════════════════════════════════ -->
+    <div class="slide" data-slide="7">
+        <h2>6 — Use-Case Classification Matrix</h2>
+        <p class="subtitle">Risk level determines regulatory path, audit depth, and human-in-the-loop requirements.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Use-Case</th>
+                    <th>Domain</th>
+                    <th>Risk</th>
+                    <th>Regulation</th>
+                    <th>Audit Depth</th>
+                    <th>Human-in-Loop</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Well Integrity Assessment</td>
+                    <td>Operations / HSE</td>
+                    <td class="risk-high">High</td>
+                    <td>PSA + IEC 61508</td>
+                    <td>Full qualification</td>
+                    <td>Mandatory</td>
+                </tr>
+                <tr>
+                    <td>Drilling Parameter Advisor</td>
+                    <td>Drilling</td>
+                    <td class="risk-high">High</td>
+                    <td>PSA + DNV-RP-A203</td>
+                    <td>Full qualification</td>
+                    <td>Mandatory</td>
+                </tr>
+                <tr>
+                    <td>Production Optimization</td>
+                    <td>Reservoir</td>
+                    <td class="risk-med">Medium</td>
+                    <td>PSA + NORSOK</td>
+                    <td>Standard</td>
+                    <td>Supervised</td>
+                </tr>
+                <tr>
+                    <td>Maintenance Planning</td>
+                    <td>Asset Integrity</td>
+                    <td class="risk-med">Medium</td>
+                    <td>PSA + NORSOK Z-008</td>
+                    <td>Standard</td>
+                    <td>Supervised</td>
+                </tr>
+                <tr>
+                    <td>Emissions Monitoring</td>
+                    <td>Environment</td>
+                    <td class="risk-med">Medium</td>
+                    <td>PSA + EU ETS</td>
+                    <td>Standard</td>
+                    <td>Supervised</td>
+                </tr>
+                <tr>
+                    <td>Personnel Competency</td>
+                    <td>HR</td>
+                    <td class="risk-med">Medium</td>
+                    <td>EU AI Act + GDPR</td>
+                    <td>Standard</td>
+                    <td>Mandatory</td>
+                </tr>
+                <tr>
+                    <td>Procurement Workflow</td>
+                    <td>Supply Chain</td>
+                    <td class="risk-low">Low</td>
+                    <td>EU AI Act (Limited)</td>
+                    <td>Simplified</td>
+                    <td>Optional</td>
+                </tr>
+                <tr>
+                    <td>Document Summarization</td>
+                    <td>Knowledge Mgmt</td>
+                    <td class="risk-low">Low</td>
+                    <td>EU AI Act (Minimal)</td>
+                    <td>Self-assessment</td>
+                    <td>Optional</td>
+                </tr>
+            </tbody>
+        </table>
+        <span class="slide-number">7 / 7</span>
+    </div>
+
+</div>
+
+<!-- ── Navigation ── -->
+<div class="nav">
+    <button id="prevBtn" onclick="navigate(-1)" disabled>← Prev</button>
+    <button id="nextBtn" onclick="navigate(1)">Next →</button>
+</div>
+
+<script>
+    let current = 1;
+    const total = 7;
+
+    function navigate(dir) {
+        const next = current + dir;
+        if (next < 1 || next > total) return;
+        document.querySelector(`.slide[data-slide="${current}"]`).classList.remove('active');
+        current = next;
+        document.querySelector(`.slide[data-slide="${current}"]`).classList.add('active');
+        document.getElementById('prevBtn').disabled = current === 1;
+        document.getElementById('nextBtn').disabled = current === total;
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+    });
+</script>
+
+</body>
+</html>
